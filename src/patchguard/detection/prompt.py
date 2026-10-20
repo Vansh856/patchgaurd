@@ -1,11 +1,11 @@
 import re
 from typing import Optional
-from patchguard.domain.models import RequestPayLoad, AttackEvents
+from patchguard.domain.models import RequestPayload, AttackEvents
 from patchguard.detection.base import BaseDetector
 
 
 
-class PromptDetactor(BaseDetector):
+class PromptDetector(BaseDetector):
 
 
     INJECTION_PATTERNS = [ 
@@ -18,16 +18,16 @@ class PromptDetactor(BaseDetector):
         ]  # compiled regex patterns for prompt injection detection
 
     def __init__(self):
-        """it initializes the PromptDetactor class and compiles the regex patterns for prompt injection detection. whiich decreases the time complexity of the detection process."""
+        """Initialize the detector and compile patterns once for faster detection."""
         self._compiled_patterns = [re.compile(pattern, re.IGNORECASE) for pattern in self.INJECTION_PATTERNS]
 
 
     @property
     def threat_type(self) -> str:
-        """it connacts to the BaseDetector class and returns the threat type as 'prompt_injection'."""
+        """Return the threat type handled by this detector."""
         return "prompt_injection"
 
-    def detect(self, payload: RequestPayLoad) -> Optional[AttackEvents]:
+    def detect(self, payload: RequestPayload) -> Optional[AttackEvents]:
 
         target_inputs=[]
         if payload.query_params:

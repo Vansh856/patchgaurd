@@ -1,9 +1,9 @@
 import pytest
-from patchguard.detection.prompt import PromptDetactor
+from patchguard.detection.prompt import PromptDetector
 from patchguard.detection.sql import SQLDetector
-from patchguard.domain.models import RequestPayLoad,ThreatType
+from patchguard.domain.models import RequestPayload, ThreatType
 
-# this test file is for unit testing the SQLDetector and PromptDetector classes. It uses pytest fixtures to create instances of the detectors and a helper function to create RequestPayLoad objects for testing. The tests check that the detectors correctly identify clean inputs and malicious inputs that indicate SQL injection or prompt injection attacks.
+# This test file unit-tests the SQLDetector and PromptDetector classes. It uses pytest fixtures to create detector instances and a helper function to create RequestPayload objects. The tests check that the detectors identify clean input and malicious SQL or prompt-injection input.
 
 
 @pytest.fixture
@@ -12,11 +12,11 @@ def sql_detector():
 
 @pytest.fixture
 def prompt_detector():
-    return PromptDetactor()
+    return PromptDetector()
 
-def create_payload(value: str)-> RequestPayLoad:
-    return RequestPayLoad(
-        meathod="GET",
+def create_payload(value: str) -> RequestPayload:
+    return RequestPayload(
+        method="GET",
         path="/test",
         headers={},
         query_params={"q": value},

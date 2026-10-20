@@ -1,7 +1,7 @@
 import sqlparse
 from sqlparse.tokens import Keyword, DML
 from typing import Optional
-from patchguard.domain.models import RequestPayLoad, AttackEvents
+from patchguard.domain.models import RequestPayload, AttackEvents
 from patchguard.detection.base import BaseDetector
 
 class SQLDetector(BaseDetector):
@@ -9,7 +9,7 @@ class SQLDetector(BaseDetector):
     def threat_type(self) -> str:
         return "sql_injection"
 
-    def detect(self, payload: RequestPayLoad) -> Optional[AttackEvents]:
+    def detect(self, payload: RequestPayload) -> Optional[AttackEvents]:
         # Check for SQL keywords in the request body
         target_inputs=[]
         if payload.query_params:
@@ -29,15 +29,15 @@ class SQLDetector(BaseDetector):
         if not text or not isinstance(text, str):
             return False
 
-        prased = sqlparse.parse(text)
+        parsed = sqlparse.parse(text)
 
-        if not prased:
+        if not parsed:
             return False
 
 
-        for statement in prased:
+        for statement in parsed:
 
-            if len(prased) > 1:
+            if len(parsed) > 1:
                 return True
 
             tokens = [token for token in statement.tokens if not token.is_whitespace]

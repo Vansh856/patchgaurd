@@ -1,18 +1,18 @@
 import argparse
 import sys
 
-from patchguard.detection.prompt import PromptDetactor
-from patchguard.detection.registry import DectactorRegistry
+from patchguard.detection.prompt import PromptDetector
+from patchguard.detection.registry import DetectorRegistry
 from patchguard.detection.sql import SQLDetector
-from patchguard.domain.models import RequestPayLoad
+from patchguard.domain.models import RequestPayload
 from patchguard.domain.policy import get_default_policy
 
 def main()-> None:
     """Main entry point for the CLI."""
 
-    praser=argparse.ArgumentParser(description="PatchGuard CLI -- A tool for detecting and preventing security threats in web applications.")
+    parser = argparse.ArgumentParser(description="PatchGuard CLI -- A tool for detecting and preventing security threats in web applications.")
 
-    subparsers=praser.add_subparsers(dest="command",help="Available commands")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
     scan_parser=subparsers.add_parser("scan",help="Scan a raw payload string for potential threats.")
     
     
@@ -20,15 +20,15 @@ def main()-> None:
 
     subparsers.add_parser("policy",help="Display default security policy configuration.")
 
-    args=praser.parse_args()
+    args = parser.parse_args()
 
     if args.command=="scan":
-        registry=DectactorRegistry()
+        registry = DetectorRegistry()
         registry.register(SQLDetector())
-        registry.register(PromptDetactor())
+        registry.register(PromptDetector())
 
-        payload=RequestPayLoad(
-            meathod="GET",
+        payload = RequestPayload(
+            method="GET",
             path="/cli-scan",
             headers={},
             query_params={"input": args.payload},
@@ -60,7 +60,7 @@ def main()-> None:
 
 
     else:
-        praser.print_help()
+        parser.print_help()
 
 
 if __name__=="__main__":

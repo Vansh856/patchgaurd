@@ -5,17 +5,17 @@ import time # USED to measure the time taken for the evaluation of the request p
 from typing import Optional #USED to indicate that the evaluate method can return either an AttackEvents object or None, depending on whether a threat is detected.
 
 from patchguard.detection.registry import DetectorRegistry
-from patchguard.domain.models import SecurityPolicy, AttackEvents,RequestPayLoad
+from patchguard.domain.models import SecurityPolicy, AttackEvents, RequestPayload
 
 
 
 logger = logging.getLogger("patchguard.firewall")
 
 
-class FireWallEvaluator:
+class FirewallEvaluator:
 
     """
-    1. The FireWallEvaluator class is responsible for evaluating incoming request payloads against the registered detectors based on the defined security policy.
+    1. The FirewallEvaluator class is responsible for evaluating incoming request payloads against the registered detectors based on the defined security policy.
     2. It measures the time taken for the evaluation and logs a warning if it exceeds the max_latency_ms defined in the SecurityPolicy.
     3. If a threat is detected and block_mode is enabled, it returns the corresponding AttackEvents object; otherwise, it logs the detection in dry-run mode and returns None.
     """
@@ -26,10 +26,10 @@ class FireWallEvaluator:
 
 
 
-    def evaluate(self,payload: RequestPayLoad)-> Optional[AttackEvents]:
+    def evaluate(self, payload: RequestPayload) -> Optional[AttackEvents]:
 
         """
-        1. The evaluate method takes a RequestPayLoad object as input and evaluates it against the registered detectors.
+        1. The evaluate method takes a RequestPayload object as input and evaluates it against the registered detectors.
         2. It measures the time taken for the evaluation and logs a warning if it exceeds the max_latency_ms defined in the SecurityPolicy.
         3. If a threat is detected and block_mode is enabled, it returns the corresponding AttackEvents object; otherwise, it logs the detection in dry-run mode and returns None.
         4. The method returns an AttackEvents object if a threat is detected and block_mode is enabled; otherwise, it returns None.

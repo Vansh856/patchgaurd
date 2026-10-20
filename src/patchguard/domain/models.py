@@ -24,7 +24,7 @@ class PatchStatus(str, Enum):
     REJECTED = "rejected"
 
 @dataclass(frozen=True)
-class RequestPayLoad:
+class RequestPayload:
     """Class representing the payload of a request."""
     path: str
     method: str
@@ -46,7 +46,7 @@ class AttackEvents:
     caller_function:str
     line_number:int
     stack_trace:str
-    raw_request: RequestPayLoad
+    raw_request: RequestPayload
     event_id: str=field(default_factory=lambda: str(uuid.uuid4()))
     blocked: bool=True
     timestamp: datetime=field(default_factory=lambda: datetime.now(timezone.utc))
@@ -74,4 +74,3 @@ class PatchResult:
     status: PatchStatus=PatchStatus.PENDING
     pr_url: Optional[str]=None
     created_at: datetime=field(default_factory=lambda: datetime.now(timezone.utc))
-

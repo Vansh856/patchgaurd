@@ -4,15 +4,15 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from patchguard.application.firewall import FireWallEvaluator
-from patchguard.domain.models import requestPayLoad
+from patchguard.application.firewall import FirewallEvaluator
+from patchguard.domain.models import RequestPayload
 
 
 
 class PatchGuardMiddleware(BaseHTTPMiddleware):
 
 
-    def __init__(self, app, evaluator: FireWallEvaluator):
+    def __init__(self, app, evaluator: FirewallEvaluator):
         super().__init__(app)
         self.evaluator = evaluator
 
@@ -21,7 +21,7 @@ class PatchGuardMiddleware(BaseHTTPMiddleware):
 
         """
         1. The dispatch method is the core of the middleware, responsible for processing each incoming HTTP request.
-        2. It extracts the request method, path, headers, query parameters, and body, constructs a RequestPayLoad object, and passes it to the FireWallEvaluator for security evaluation.
+        2. It extracts the request method, path, headers, query parameters, and body, constructs a RequestPayload object, and passes it to the FirewallEvaluator for security evaluation.
         3. If a threat is detected and block_mode is enabled, it returns a 403 Forbidden response with details about the detected threat; otherwise, it allows the request to proceed to the next middleware or route handler.
         4. The method also handles the parsing of the request body, supporting both JSON and    non-JSON payloads, and ensures that the evaluation process is efficient and does not introduce significant latency to the request processing.
         """
@@ -38,14 +38,14 @@ class PatchGuardMiddleware(BaseHTTPMiddleware):
         except Exception: # If JSON parsing fails, keep the body as a string
             body_obj = body_str
 
-        payload = requestPayLoad(
+        payload = RequestPayload(
             method=request.method,
             path=request.url.path,
             headers=headers,
             query_params=query_params,
             body=body_obj,
             client_ip=request.client.host if request.client else "unknown"
-        ) # construct a RequestPayLoad object with the extracted request details, including method, path, headers, query parameters, body, and client IP address
+        ) # construct a RequestPayload object with the extracted request details, including method, path, headers, query parameters, body, and client IP address
 
 
         attack_event = self.evaluator.evaluate(payload) # checks for any attack events

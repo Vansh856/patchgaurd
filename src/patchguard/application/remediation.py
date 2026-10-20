@@ -12,7 +12,7 @@ from  patchguard.infrastructure.sandbox import PytestSandboxRunner
 logger= logging.getLogger("patchguard.remediation")
 
 
-class RemediationOrchastrator:
+class RemediationOrchestrator:
 
 
     def __init__(self,
@@ -65,4 +65,3 @@ class RemediationOrchastrator:
             logger.warning("Patch verification failed for incident {event.incident_id[:8]}. Skipping GitHub PR creation.")
 
         return patch
-

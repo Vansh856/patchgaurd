@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import Callable, Awaitable, Optional
-from patchguard.domain.models import AttackEvent
+from patchguard.domain.models import AttackEvents
 
 logger = logging.getLogger("patchguard.queue")
 
@@ -12,14 +12,14 @@ class AsyncIncidentQueue:
     def __init__(self,maxsize: int = 1000):
         """
         1. Initializes the AsyncIncidentQueue with a specified maximum size.
-        2. Creates an asyncio.Queue to hold AttackEvent instances.
+        2. Creates an asyncio.Queue to hold AttackEvents instances.
         """
-        self._queue:asyncio.Queue[AttackEvent] = asyncio.Queue(maxsize=maxsize)
+        self._queue:asyncio.Queue[AttackEvents] = asyncio.Queue(maxsize=maxsize)
         self._worker_task: Optional[asyncio.Task] = None
-        self._handler: Optional[Callable[[AttackEvent], Awaitable[None]]] = None
+        self._handler: Optional[Callable[[AttackEvents], Awaitable[None]]] = None
 
 
-    def enqueue(self, event: AttackEvent)-> bool:
+    def enqueue(self, event: AttackEvents)-> bool:
 
         try:
             self._queue.put_nowait(event)
@@ -30,10 +30,10 @@ class AsyncIncidentQueue:
             return False
 
 
-    def start_worker(self, handler: Callable[[AttackEvent], Awaitable[None]]) -> None:
+    def start_worker(self, handler: Callable[[AttackEvents], Awaitable[None]]) -> None:
 
         """
-        1. Sets the handler function to be used for processing AttackEvent instances.
+        1. Sets the handler function to be used for processing AttackEvents instances.
         2. Starts the background worker task if it is not already running.
         """
         self._handler = handler
@@ -44,7 +44,7 @@ class AsyncIncidentQueue:
 
     async def _worker_loop(self) -> None:
         """
-        1. Continuously processes AttackEvent instances from the queue.
+        1. Continuously processes AttackEvents instances from the queue.
         2. Calls the provided handler function for each event.
         """
 

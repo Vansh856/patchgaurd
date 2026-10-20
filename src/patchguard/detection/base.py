@@ -2,7 +2,7 @@ import inspect
 import traceback
 from abc import ABC, abstractmethod
 from typing import Optional
-from patchguard.domain.models import RequestPayLoad, AttackEvents, ThreatType
+from patchguard.domain.models import RequestPayload, AttackEvents, ThreatType
 from patchguard.domain.ports import BaseDetectorPort
 
 
@@ -16,7 +16,7 @@ class BaseDetector(BaseDetectorPort, ABC):
     5. it then passes the AttackEvents object to the RemediationEnginePort for patch synthesis.
     """
 
-    def _create_attack_event(self, payload: RequestPayLoad, rule_id: str, payload_snippet: str) -> AttackEvents:
+    def _create_attack_event(self, payload: RequestPayload, rule_id: str, payload_snippet: str) -> AttackEvents:
 
         stack=inspect.stack()  # Get the current stack trace
         caller_file="unknown"

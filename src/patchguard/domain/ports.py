@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import optional
-from patchguard.domain.models import AttackEvents, RequestPayLoad,PatchResult
+from typing import Optional
+from patchguard.domain.models import AttackEvents, RequestPayload, PatchResult
 
 class BaseDetectorPort(ABC):
     """
@@ -18,7 +18,7 @@ class BaseDetectorPort(ABC):
    
    
     @abstractmethod
-    def detect(self,payload:RequestPayLoad) -> optional[AttackEvents]:
+    def detect(self, payload: RequestPayload) -> Optional[AttackEvents]:
         """Detect potential threats in the given payload."""
         pass
 
@@ -57,4 +57,3 @@ class RepositoryManagerPort(ABC):
     async def create_patch_pull_request(self,patch_result:PatchResult)-> str:
         """Create a pull request for the given patch result and return the PR URL."""
         pass
-
