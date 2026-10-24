@@ -13,13 +13,26 @@ class DetectorRegistry:
         self._detectors: List[BaseDetectorPort] = []
 
     def register(self, detector: BaseDetectorPort) -> None:
-        """Register a new detector."""
+        """
+        Register a new detector.
+
+        Args:
+            detector (BaseDetectorPort): The detector to register.
+        """
         self._detectors.append(detector)
 
     def evaluate(self, payload: RequestPayload) -> Optional[AttackEvents]:
-        """Evaluate the payload against all registered detectors."""
+        """
+        Evaluate the payload against all registered detectors.
+
+        Args:
+            payload (RequestPayload): The request payload to evaluate.
+
+        Returns:
+            Optional[AttackEvents]: The first detected attack event, or None if no attack is detected.
+        """
         for detector in self._detectors:
             event = detector.detect(payload)
             if event:
                 return event
-            return None
+        return None
