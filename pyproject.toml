@@ -11,13 +11,13 @@ description="Autonomous Runtime Defence & Auto-Remediation Engine"
 readme="README.md"
 requires-python=">=3.10"
 dependencies = [ 
-    "fastapi&gt;=0.100.0", 
-    "starlette&gt;=0.27.0", 
-    "uvicorn&gt;=0.22.0", 
-    "sqlparse&gt;=0.4.4", 
-    "PyGithub&gt;=2.1.0", 
-    "pytest&gt;=7.4.0", 
-    "pytest-asyncio&gt;=0.21.0", 
+    "fastapi&gt>=0.100.0", 
+    "starlette&gt>=0.27.0", 
+    "uvicorn&gt>=0.22.0", 
+    "sqlparse&gt>=0.4.4", 
+    "PyGithub&gt>=2.1.0", 
+    "pytest&gt>=7.4.0", 
+    "pytest-asyncio&gt>=0.21.0", 
     ]
 
 
