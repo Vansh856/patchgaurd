@@ -27,6 +27,6 @@ patchguard="patchguard.interfaces.cli:main"
 [tool.setuptools.packages.find]
 where=["src"]
 
-[test.pytest.ini_options]
+[tool.pytest.ini_options]
 testpaths=["tests"]
 pythonpaths=["src"]
