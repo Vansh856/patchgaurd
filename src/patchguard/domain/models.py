@@ -16,12 +16,13 @@ class ThreatType(str, Enum):
     UNKNOWN = "unknown"
 
 class PatchStatus(str, Enum):
-    """Enum representing the status of a patch."""
     PENDING = "pending"
     SANDBOX_PASSED = "sandbox_passed"
     SANDBOX_FAILED = "sandbox_failed"
     PR_OPENED = "pr_opened"
     REJECTED = "rejected"
+    REMEDIATION_FAILED = "remediation_failed"
+    MANUAL_REVIEW = "manual_review"
 
 @dataclass(frozen=True)
 class RequestPayload:
@@ -63,6 +64,7 @@ class SecurityPolicy:
 @dataclass
 class PatchResult:
     """Class representing the result of a patch."""
+    target_file: str
     event_id: str
     branch_name: str
     original_code: str

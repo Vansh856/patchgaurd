@@ -20,7 +20,7 @@ class RuntimeContextExtractor:
             Dict[str, Any]: A dictionary containing the extracted runtime context.
         """
 
-        file_path = Path(event.file_path)
+        file_path = Path(event.caller_file)
 
         if not file_path.exists() or not file_path.is_file():       # if the file does not exist or is not a file, return an error message
             return {

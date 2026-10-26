@@ -15,4 +15,4 @@ def get_default_policy() -> SecurityPolicy:
 
 def validate_policy(policy: SecurityPolicy) -> bool:
 
-    return policy.max_latency_ms>3.0
+    return policy.max_latency_ms>=3.0

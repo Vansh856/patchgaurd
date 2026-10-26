@@ -6,15 +6,24 @@ from starlette.responses import JSONResponse, Response
 
 from patchguard.application.firewall import FirewallEvaluator
 from patchguard.domain.models import RequestPayload
+from patchguard.infrastructure.queue import AsyncIncidentQueue
 
 
 
 class PatchGuardMiddleware(BaseHTTPMiddleware):
+    """
+    A middleware for integrating PatchGuard's security features into a Starlette application.
+    """
 
 
-    def __init__(self, app, evaluator: FirewallEvaluator):
+
+    def __init__(self, app, evaluator: FirewallEvaluator,incident_queue: AsyncIncidentQueue | None = None, remediation_handler=None):
         super().__init__(app)
         self.evaluator = evaluator
+        self.incident_queue = incident_queue
+        self.remediation_handler = remediation_handler
+
+
 
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]])-> Response:
@@ -51,6 +60,10 @@ class PatchGuardMiddleware(BaseHTTPMiddleware):
         attack_event = self.evaluator.evaluate(payload) # checks for any attack events
 
         if attack_event:
+            if self.incident_queue is not None:
+                if self.remediation_handler is not None:
+                    self.incident_queue.start_worker(self.remediation_handler)
+                self.incident_queue.enqueue(attack_event)
             return JSONResponse(
                 status_code=403,
                 content={
@@ -60,6 +73,7 @@ class PatchGuardMiddleware(BaseHTTPMiddleware):
                     "rule_id": attack_event.rule_id
                 },
             )
+
 
 
         return await call_next(request) # await the next middleware or route handler in the chain, allowing the request to proceed if no threat is detected

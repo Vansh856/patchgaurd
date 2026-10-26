@@ -1,6 +1,11 @@
 import json
 import logging
 from typing import Any, Dict
+import os
+from google import genai
+from google.genai import types
+import httpx
+from google.genai import errors
 
 from patchguard.domain.models import AttackEvents,PatchResult,PatchStatus
 from patchguard.domain.ports import RemediationEnginePort
@@ -8,11 +13,15 @@ from patchguard.domain.ports import RemediationEnginePort
 
 logger = logging.getLogger("patchguard.llm")
 
+class LLMProviderError(RuntimeError):
+    """Custom exception for LLM provider errors."""
+    pass
+
 
 class LLMRemediationEngine(RemediationEnginePort):
 
 
-    def __init__(self, api_key: str="mock-key",model_name:str="gemini-2.5-flash")->None:
+    def __init__(self, api_key: str="mock-key",model_name:str="gemini-3.8-flash")->None:
         """
         Initializes the LLMRemediationEngine with the provided API key and model name.
 
@@ -22,8 +31,26 @@ class LLMRemediationEngine(RemediationEnginePort):
         returns:
             None
         """
-        self.api_key = api_key
+        self.api_key = os.getenv("GEMINI_API_KEY") or api_key
         self.model_name = model_name
+
+        if self.api_key == "mock-key":
+            self.client = None
+        else:
+            self.client = genai.Client(
+                api_key=self.api_key,
+                http_options=types.HttpOptions(
+                    timeout=10_000,
+                    retry_options=types.HttpRetryOptions(
+                        attempts=3,
+                        initial_delay=1.0,
+                        max_delay=4.0,
+                        exp_base=2.0,
+                        jitter=0.2,
+                    ),
+                ),
+            )
+        
 
 
     def synthesize_patch(self,event: AttackEvents,context: Dict[str, Any])->PatchResult:
@@ -44,12 +71,19 @@ class LLMRemediationEngine(RemediationEnginePort):
         response = self._call_llm_provider(prompt)
 
         return PatchResult(
-            incident_id=event.event_id,
-            status=PatchStatus.SYNTHESIZED,
             target_file=event.caller_file,
-            fixed_code=response.get("fixed_code", ""),
-            exploit_test_code=response.get("exploit_test", ""),
-            benign_test_code=response.get("benign_test", ""),
+            event_id=event.event_id,
+            branch_name=f"patchguard/fix-{event.event_id[:8]}",
+            original_code=context.get("full_source", ""),
+            patched_code=response.get("fixed_code", ""),
+            test_suite_code=(
+                response.get("exploit_test", "")
+                + "\n"
+                + response.get("benign_test", "")
+            ),
+            sandbox_passed=False,
+            diff_summary="Patch generated and awaiting sandbox verification",
+            
         )
 
 
@@ -77,14 +111,14 @@ class LLMRemediationEngine(RemediationEnginePort):
                 - Vulnerable Payload Snippet: {event.payload_snippet} 
             Vulnerable Source Function: 
             ```python 
-            {context.get("function\_source", "")}
+            {context.get("function_source", "")}
             INSTRUCTIONS:
 
                 1. Rewrite the vulnerable function to eliminate the security risk (e.g. use parameterized query binding or sanitize prompt templates).
                 2. Generate a Pytest test case `test_exploit()` that reproduces the malicious payload attempt and verifies it is safely handled.
                 3. Generate a Pytest test case `test_benign()` that verifies legitimate non-malicious user requests continue to function normally.
 
-            Return your response strictly as JSON with keys: "fixed\_code", "exploit\_test", "benign\_test". 
+            Return your response strictly as JSON with keys: "fixed_code", "exploit_test", "benign_test". 
             """
 
 
@@ -98,10 +132,21 @@ class LLMRemediationEngine(RemediationEnginePort):
         Returns:
             Dict[str, str]: The response from the LLM provider, parsed as a dictionary.
         """
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.1,
+                ),
+            )
+
+            return json.loads(response.text)
+
+        except (errors.APIError, httpx.TimeoutException, TimeoutError, json.JSONDecodeError) as exc:
+            logger.exception("Gemini remediation request failed: %s", exc)
+            raise LLMProviderError("Gemini remediation request failed") from exc
 
 
-        return {
-            "fixed_code":"#Auto-generated parameterized fix by PatchGuard AI\n",
-            "exploit_test": "def test_exploit():\n     Test payload is neutralized\n     pass\n",
-            "benign_test": "def test_benign():\n     Test normal traffic passes\n     pass\n"
-        }
+        

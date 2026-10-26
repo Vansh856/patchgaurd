@@ -37,7 +37,7 @@ class FirewallEvaluator:
 
         start_time = time.perf_counter() # takes the current time in seconds 
 
-        event = self.registry.evaluate(payload) # takes the current request payload and evaluates it against all registered detectors in the DetectorRegistry. If a threat is detected, it returns an AttackEvents object; otherwise, it returns None.
+        event = self.registry.evaluate(payload,enabled_detectors=self.policy.enabled_detectors) # takes the current request payload and evaluates it against all registered detectors in the DetectorRegistry. If a threat is detected, it returns an AttackEvents object; otherwise, it returns None.
 
 
         elapsed_ms=(time.perf_counter() - start_time) * 1000  # calculate the time taken for the evaluation in milliseconds 

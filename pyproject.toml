@@ -17,7 +17,8 @@ dependencies = [
     "sqlparse>=0.4.4", 
     "PyGithub>=2.1.0", 
     "pytest>=7.4.0", 
-    "pytest-asyncio>=0.21.0", 
+    "pytest-asyncio>=0.21.0",
+    "google-genai>=1.0.0", 
     ]
 
 
@@ -28,5 +29,8 @@ patchguard="patchguard.interfaces.cli:main"
 where=["src"]
 
 [tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:'_UnionGenericAlias' is deprecated and slated for removal in Python 3.17:DeprecationWarning",
+]
 testpaths=["tests"]
-pythonpaths=["src"]
+pythonpath=["src"]

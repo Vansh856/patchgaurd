@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+
 from github import Github, GithubException
 
 from patchguard.domain.models import PatchResult, PatchStatus
@@ -8,130 +8,86 @@ from patchguard.domain.ports import RepositoryManagerPort
 
 logger = logging.getLogger("patchguard.github")
 
+
 class GitHubRepositoryManager(RepositoryManagerPort):
-
     def __init__(self, github_token: str, repo_name: str) -> None:
-        """
-        Initializes the GitHubRepositoryManager with the provided GitHub token and repository name.
-
-        Args:
-            github_token (str): The GitHub personal access token for authentication.
-            repo_name (str): The name of the GitHub repository in the format "owner/repo".
-        returns:
-            None
-        """
-
         self.github_token = github_token
         self.repo_name = repo_name
-        self._gh=Github(github_token)
+        self._gh = Github(github_token)
 
-
-    
-    
-    def create_pull_request(self, patch: PatchResult)->PatchResult:
-        """
-        Creates a pull request in the GitHub repository for the given patch result.
-
-        Args:
-            patch (PatchResult): The patch result containing the original code, patched code, and test suite code.
-        Returns:
-            PatchResult: The updated patch result with the pull request URL and status.
-        """
-
-        logger.info(f"Creating github pull request for incident {patch.incident_id}...")
+    def create_pull_request(self, patch: PatchResult) -> PatchResult:
+        """Create a branch, commit the patched file, and open a pull request."""
+        logger.info("Creating GitHub pull request for incident %s", patch.event_id)
 
         try:
             repo = self._gh.get_repo(self.repo_name)
             default_branch = repo.default_branch
-            ref=repo.get_git_ref(f"heads/{default_branch}")
-            sha=ref.object.sha
-
-            branch_name = f"patchguard/fix-{patch.incident_id[:8]}"
-
+            base_ref = repo.get_git_ref(f"heads/{default_branch}")
+            branch_name = patch.branch_name
 
             try:
-                repo.create_git_ref(ref=f"refs/heads/{branch_name}, sha=sha)")
-
-            except GithubException as e:
-
-                if e.status == 422:
-                    logger.warning(f"Branch {branch_name} already exists. Using the existing branch.")
-
-                else:
+                repo.create_git_ref(
+                    ref=f"refs/heads/{branch_name}",
+                    sha=base_ref.object.sha,
+                )
+            except GithubException as exc:
+                if exc.status != 422:
                     raise
+                logger.warning("Branch %s already exists", branch_name)
 
+            commit_message = (
+                f"security(patchguard): auto remediation incident {patch.event_id}"
+            )
 
-                try:
-
-                    existing_file = repo.get_contents(patch.target_file,ref=branch_name)
-
-                    repo.update_file(
-                        patch=patch.target_file, 
-                        message=f"security(patchguard): auto remediation incident {patch.incident_id}",
-                        content=patch.fixed_code,
-                        sha=existing_file.sha,
-                        branch=branch_name
-                    )
-
-
-                except GithubException as e:
-
-                    repo.create_file(
-                        path=patch.target_file,
-                        message=f"security(patchguard): auto remediation incident {patch.incident_id}",
-                        content=patch.fixed_code,
-                        branch=branch_name
-                    )
-
-
-                pr_title = f"🛡️ [PatchGuard] Auto-Remediation for Incident {patch.incident_id[:8]}"
-                pr_body = self.build_pr_body(patch)
-
-                pr = repo.create_pull(
-                    title=pr_title,
-                    body=pr_body,
-                    head=branch_name,
-                    base=default_branch
+            try:
+                existing_file = repo.get_contents(
+                    patch.target_file,
+                    ref=branch_name,
+                )
+            except GithubException as exc:
+                if exc.status != 404:
+                    raise
+                repo.create_file(
+                    path=patch.target_file,
+                    message=commit_message,
+                    content=patch.patched_code,
+                    branch=branch_name,
+                )
+            else:
+                repo.update_file(
+                    path=patch.target_file,
+                    message=commit_message,
+                    content=patch.patched_code,
+                    sha=existing_file.sha,
+                    branch=branch_name,
                 )
 
-                logger.info(f"Successfully opening PR #{pr.number}:{pr.html_url}")
-                patch.pull_request_url=pr.html_url
-                patch.status=PatchStatus.PR_OPENED
-
-        except GithubException as e:
-            logger.exception(f"Failed to create GitHub Pull Request: {e}")
-            patch.status=PatchStatus.FAILED
+            pull_request = repo.create_pull(
+                title=f"[PatchGuard] Auto-remediation {patch.event_id[:8]}",
+                body=self._built_pr_body(patch),
+                head=branch_name,
+                base=default_branch,
+            )
+            patch.pr_url = pull_request.html_url
+            patch.status = PatchStatus.PR_OPENED
+            logger.info("Created GitHub PR %s", pull_request.html_url)
+        except GithubException:
+            logger.exception("Failed to create GitHub pull request")
+            patch.status = PatchStatus.REJECTED
 
         return patch
 
+    async def create_patch_pull_request(self, patch_result: PatchResult) -> str:
+        """Implement the repository-manager port."""
+        patch = self.create_pull_request(patch_result)
+        return patch.pr_url or ""
 
+    def _built_pr_body(self, patch: PatchResult) -> str:
+        return f"""## PatchGuard Autonomous Security Patch
 
+**Incident ID:** `{patch.event_id}`
+**Target File:** `{patch.target_file}`
+**Status:** `SANDBOX_PASSED`
 
-    def _built_pr_body(self, patch: PatchResult)-> str:
-        """
-        Builds the body of the pull request for the given patch result.
-
-        Args:
-            patch (PatchResult): The patch result containing the original code, patched code, and test suite code.
-        Returns:
-            str: The body of the pull request.  
-        """
-        return f""" 
-        ## 🛡️ PatchGuard Autonomous Security Patch 
-         
-        **Incident ID:** `{patch.incident_id}` 
-        **Target File:** `{patch.target_file}` 
-        **Status:** `VERIFIED (Sandbox Passed)` 
-        
-        --- 
-        
-        ### 📝 Remediation Summary 
-        # An automated security fix has been synthesized by PatchGuard AI and successfully verified inside an isolated Pytest regression sandbox. 
-        
-        ### 🧪 Sandbox Verification Output 
-        ```text 
-        
-        {patch.verification_output or "All 2/2 tests passed (exploit blocked + benign preserved)."}
-
-        """
-    
+The patch passed the isolated regression sandbox and is ready for human review.
+"""

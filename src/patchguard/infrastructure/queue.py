@@ -23,10 +23,10 @@ class AsyncIncidentQueue:
 
         try:
             self._queue.put_nowait(event)
-            logger.info(f"Enqueued attack event: {event.id} for async remediation.")
+            logger.info(f"Enqueued attack event: {event.event_id} for async remediation.")
             return True
         except asyncio.QueueFull:
-            logger.error(f"Incident queue is full. Dropping attack event offload: {event.id}.")
+            logger.error(f"Incident queue is full. Dropping attack event offload: {event.event_id}.")
             return False
 
 
@@ -63,13 +63,19 @@ class AsyncIncidentQueue:
             except Exception as e:
                 logger.exception(f"Unexpected error in Background worker loop: {e}")
 
-    async def stop(self)-> None:
+    async def stop(self) -> None:
         """
-        1. Stops the background worker task if it is running.
-        2. Cancels the task and waits for it to finish."""
+        Drain queued incidents before stopping the worker.
+        """
         if self._worker_task and not self._worker_task.done():
+            try:
+                await asyncio.wait_for(self._queue.join(), timeout=10)
+            except asyncio.TimeoutError:
+                logger.warning("Timed out waiting for incident queue to drain.")
+
             self._worker_task.cancel()
+
             try:
                 await self._worker_task
             except asyncio.CancelledError:
-                logger.info("Background incident remediation worker  stopped.")
+                logger.info("Background incident remediation worker stopped.")
