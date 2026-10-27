@@ -77,6 +77,64 @@ class GitHubRepositoryManager(RepositoryManagerPort):
 
         return patch
 
+
+    def create_manual_remediation_issue(
+        self,
+        patch: PatchResult,
+    ) -> str:
+        """Create a GitHub Issue for remediation that needs human review."""
+
+        logger.info(
+            "Creating manual remediation issue for incident %s",
+            patch.event_id,
+        )
+
+        try:
+            repo = self._gh.get_repo(self.repo_name)
+
+            issue = repo.create_issue(
+                title=(
+                    f"[PatchGuard] Manual remediation required "
+                    f"{patch.event_id[:8]}"
+                ),
+                body=self._build_manual_issue_body(patch),
+                labels=["security", "patchguard", "manual-review"],
+            )
+
+            logger.info("Created GitHub issue %s", issue.html_url)
+            return issue.html_url
+
+        except GithubException:
+            logger.exception(
+                "Failed to create manual remediation issue"
+            )
+            return ""
+
+    def _build_manual_issue_body(self, patch: PatchResult) -> str:
+        """Build a sanitized manual-remediation issue body."""
+
+        return f"""## PatchGuard Manual Remediation Required
+
+**Incident ID:** `{patch.event_id}`
+**Threat type:** `{patch.threat_type.value if patch.threat_type else "unknown"}`
+**Target file:** `{patch.target_file}`
+**Attempts:** `{patch.attempt_number}`
+**Provider:** `{patch.provider_name or "unknown"}`
+**Error code:** `{patch.error_code or "MAX_ATTEMPTS_EXCEEDED"}`
+
+### Summary
+
+Automated remediation did not produce a patch that passed
+the required validation checks after the maximum number of attempts.
+
+### Verification feedback
+
+```text
+{patch.verification_output[:4000]}
+A developer must inspect the incident and implement the remediation manually.   
+```
+"""
+
     async def create_patch_pull_request(self, patch_result: PatchResult) -> str:
         """Implement the repository-manager port."""
         patch = self.create_pull_request(patch_result)

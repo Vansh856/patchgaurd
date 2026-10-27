@@ -60,10 +60,10 @@ class SecurityPolicy:
     block_mode: bool=True
     max_latency_ms: float=3.0
 
-
 @dataclass
 class PatchResult:
-    """Class representing the result of a patch."""
+    """Class representing the result of a remediation patch attempt."""
+    
     target_file: str
     event_id: str
     branch_name: str
@@ -72,7 +72,16 @@ class PatchResult:
     test_suite_code: str
     sandbox_passed: bool
     diff_summary: str
-    patch_id: str=field(default_factory=lambda: str(uuid.uuid4()))
-    status: PatchStatus=PatchStatus.PENDING
-    pr_url: Optional[str]=None
-    created_at: datetime=field(default_factory=lambda: datetime.now(timezone.utc))
+    patch_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    status: PatchStatus = PatchStatus.PENDING
+    pr_url: Optional[str] = None
+    provider_name: Optional[str] = None
+    threat_type: Optional[ThreatType] = None
+    trusted_test_paths: tuple[str, ...] = field(default_factory=tuple)
+    developer_test_paths: tuple[str, ...] = field(default_factory=tuple)
+    attempt_number: int = 1
+    error_code: Optional[str] = None
+    verification_output: str = ""
+    created_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

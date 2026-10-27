@@ -11,6 +11,7 @@ description="Autonomous Runtime Defence & Auto-Remediation Engine"
 readme="README.md"
 requires-python=">=3.10"
 dependencies = [ 
+    "openai>=1.0.0",
     "fastapi>=0.100.0", 
     "starlette>=0.27.0", 
     "uvicorn>=0.22.0", 
@@ -19,7 +20,7 @@ dependencies = [
     "pytest>=7.4.0", 
     "pytest-asyncio>=0.21.0",
     "google-genai>=1.0.0", 
-    ]
+]
 
 
 [project.scripts]
