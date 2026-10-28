@@ -7,6 +7,7 @@ from starlette.responses import JSONResponse, Response
 from patchguard.application.firewall import FirewallEvaluator
 from patchguard.domain.models import RequestPayload
 from patchguard.infrastructure.queue import AsyncIncidentQueue
+from patchguard.interfaces.starlette_metadata import get_endpoint_metadata
 
 
 
@@ -47,13 +48,18 @@ class PatchGuardMiddleware(BaseHTTPMiddleware):
         except Exception: # If JSON parsing fails, keep the body as a string
             body_obj = body_str
 
+        endpoint_metadata = get_endpoint_metadata(self.app, request.scope)
+
         payload = RequestPayload(
             method=request.method,
             path=request.url.path,
             headers=headers,
             query_params=query_params,
             body=body_obj,
-            client_ip=request.client.host if request.client else "unknown"
+            client_ip=request.client.host if request.client else "unknown",
+            caller_file=endpoint_metadata["caller_file"],
+            caller_function=endpoint_metadata["caller_function"],
+            caller_line=endpoint_metadata["caller_line"],
         ) # construct a RequestPayload object with the extracted request details, including method, path, headers, query parameters, body, and client IP address
 
 

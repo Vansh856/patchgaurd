@@ -20,12 +20,14 @@ src/patchguard/domain/models.py
 src/patchguard/domain/policy.py
 src/patchguard/domain/ports.py
 src/patchguard/infrastructure/__init__.py
+src/patchguard/infrastructure/developer_tests.py
+src/patchguard/infrastructure/failure_feedback.py
 src/patchguard/infrastructure/github.py
-src/patchguard/infrastructure/llm.py
 src/patchguard/infrastructure/llm_providers.py
 src/patchguard/infrastructure/queue.py
 src/patchguard/infrastructure/runtime.py
 src/patchguard/infrastructure/sandbox.py
+src/patchguard/infrastructure/trusted_tests.py
 src/patchguard/interfaces/__init__.py
 src/patchguard/interfaces/cli.py
 src/patchguard/interfaces/factory.py

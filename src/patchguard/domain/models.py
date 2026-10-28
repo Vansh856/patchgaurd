@@ -33,6 +33,9 @@ class RequestPayload:
     query_params: Dict[str, str]=field(default_factory=dict)
     body: Optional[Any]=None
     client_ip:str="127.0.0.1"
+    caller_file: Optional[str] = None
+    caller_function: Optional[str] = None
+    caller_line: Optional[int] = None
     request_id: str=field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: datetime=field(default_factory=lambda: datetime.now(timezone.utc))
 

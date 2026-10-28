@@ -28,7 +28,7 @@ It is designed to connect three concerns that are usually separated:
 
 The project blueprint focuses on FastAPI and Flask applications, SQL injection, prompt injection, runtime context capture, sandbox verification, and GitHub pull-request automation.
 
-> **Current status:** The repository currently contains the modular project structure and documentation foundation. Implementation will be added behind the interfaces described below.
+> **Current status:** The MVP implements asynchronous remediation with Gemini/OpenAI provider failover, bounded patch revisions, trusted security tests, developer-owned tests, sandbox verification, and GitHub pull-request/manual-issue outcomes.
 
 ## Why PatchGuard?
 
@@ -59,15 +59,20 @@ PatchGuard middleware
 		      Runtime context extraction
 				  |
 				  v
-		      Patch and test synthesis
+		      Patch synthesis with provider failover
 				  |
 				  v
-			  Sandbox verification
+			  Trusted security tests
 				  |
-		   Tests pass? --+-- No --> Stop
+				  v
+			  Developer tests
+				  |
+		   Tests pass? --+-- No --> Feedback and retry
 				  |
 				  v
 		      Verified GitHub pull request
+				  |
+				  +-- Three failed attempts --> Manual GitHub issue
 ```
 
 The request path should remain deterministic and lightweight. LLM calls, sandbox execution, and GitHub operations belong to background workers.
@@ -103,7 +108,10 @@ src/patchguard/
 ├── infrastructure/
 │   ├── runtime.py         # Stack and runtime context extraction
 │   ├── queue.py           # Background job delivery
-│   ├── llm.py             # Patch and test synthesis adapter
+│   ├── llm_providers.py   # Gemini/OpenAI adapters and failover coordinator
+│   ├── trusted_tests.py   # PatchGuard-owned security test registry
+│   ├── developer_tests.py # Developer-owned test registry
+│   ├── failure_feedback.py # Failure-output sanitization
 │   ├── sandbox.py         # Isolated regression execution
 │   └── github.py          # Branch, commit, and pull-request adapter
 └── interfaces/
@@ -119,14 +127,20 @@ The domain layer should not depend on FastAPI, Flask, GitHub, a specific LLM pro
 PatchGuard should never merge generated code directly into production or the default branch. A remediation job must:
 
 1. Create an isolated working branch.
-2. Generate a proposed patch and regression tests.
-3. Run the tests in a restricted sandbox.
-4. Confirm that the exploit is rejected.
-5. Confirm that a representative benign request still succeeds.
-6. Open a pull request with the diff and verification result.
-7. Leave final review and merge approval to the repository’s normal controls.
+2. Try Gemini and then OpenAI when a provider is unavailable.
+3. Generate at most three patch revisions for one incident.
+4. Run PatchGuard-owned security tests in a restricted sandbox.
+5. Run developer-owned unit and integration tests.
+6. Feed bounded, sanitized failures into the next patch attempt.
+7. Open a pull request only when all required tests pass.
+8. Create a manual-remediation GitHub Issue after the final failed attempt.
+9. Leave final review and merge approval to the repository’s normal controls.
 
 If sandbox verification fails, the pull request must not be created.
+
+LLM-generated tests are not used as acceptance criteria. Provider adapters return
+patch code and an explanation only; the sandbox selects trusted tests from the
+repository and runs developer-owned tests separately.
 
 ## Project Layout
 
@@ -147,7 +161,7 @@ The modular structure leaves room for optional adapters rather than making exter
 
 - FastAPI and Starlette middleware.
 - Flask middleware.
-- An LLM provider for patch and test synthesis.
+- Gemini and OpenAI providers for patch synthesis.
 - A local or containerized sandbox runner.
 - GitHub pull requests through the GitHub API.
 - In-memory queues for development and durable queues for production.

@@ -47,6 +47,28 @@ class RemediationOrchestrator:
         )
 
         context = self.extractor.extract_context(event)
+        context_error = context.get("error")
+        if context_error:
+            return PatchResult(
+                target_file=event.caller_file,
+                event_id=event.event_id,
+                threat_type=event.threat_type,
+                trusted_test_paths=tuple(
+                    str(path)
+                    for path in get_trusted_test_paths(event.threat_type)
+                ),
+                developer_test_paths=get_developer_test_paths(),
+                branch_name=f"patchguard/fix-{event.event_id[:8]}",
+                original_code=context.get("full_source", ""),
+                patched_code="",
+                test_suite_code="",
+                sandbox_passed=False,
+                diff_summary=str(context_error),
+                attempt_number=0,
+                error_code="SOURCE_CONTEXT_UNAVAILABLE",
+                status=PatchStatus.MANUAL_REVIEW,
+            )
+
         previous_patch = ""
         failure_feedback = ""
         last_result: Optional[PatchResult] = None
